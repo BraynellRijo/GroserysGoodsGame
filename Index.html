@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stores and Goods Game</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom right, #f0fdf4, #fefce8);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #166534;
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .score-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+    }
+
+    #shuffleBtn {
+      background: #16a34a;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #shuffleBtn:hover {
+      background: #15803d;
+    }
+
+    .feedback {
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+      min-height: 30px;
+    }
+
+    .feedback.correct {
+      color: #16a34a;
+    }
+
+    .feedback.wrong {
+      color: #dc2626;
+    }
+
+    .congrats {
+      text-align: center;
+      background: #dcfce7;
+      border: 2px solid #16a34a;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .items {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .item-row {
+      display: contents;
+    }
+
+    .item-btn, .store-slot {
+      padding: 12px;
+      border-radius: 8px;
+      border: 2px solid #e5e7eb;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      background: white;
+    }
+
+    .item-btn:hover:not(:disabled) {
+      background: #fef9c3;
+    }
+
+    .item-btn.selected {
+      background: #fde68a;
+      border-color: #facc15;
+    }
+
+    .item-btn.matched {
+      background: #bbf7d0;
+      color: #166534;
+      text-decoration: line-through;
+      cursor: not-allowed;
+    }
+
+    .store-slot {
+      background: #f3f4f6;
+      text-align: center;
+      cursor: default;
+    }
+
+    .store-slot.matched {
+      background: #bbf7d0;
+      color: #166534;
+      text-transform: capitalize;
+    }
+
+    .stores {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      border: 2px solid #e5e7eb;
+      margin-top: 20px;
+    }
+
+    .stores h3 {
+      text-align: center;
+      color: #166534;
+      margin-bottom: 10px;
+    }
+
+    .stores-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+    }
+
+    .store-btn {
+      background: white;
+      border: 2px solid #e5e7eb;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-transform: capitalize;
+    }
+
+    .store-btn:hover {
+      background: #fef9c3;
+    }
+
+    .store-btn.selected {
+      background: #fde68a;
+      border-color: #facc15;
+    }
+
+    .store-count {
+      display: block;
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 20px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Kneegrows Games</h1>
+      <h2>Stores and Goods</h2>
+      <p>Match each item with its correct store</p>
+      <div class="score-bar">
+        <div id="score">Score: 0</div>
+        <button id="shuffleBtn">🔀 Restart</button>
+      </div>
+    </header>
+
+    <div id="feedback" class="feedback"></div>
+
+    <div id="congrats" class="congrats hidden">
+      <h2>🎉 Congratulations!</h2>
+      <p>You matched all items correctly!</p>
+    </div>
+
+    <div id="items" class="items"></div>
+
+    <div class="stores">
+      <h3>Available Stores</h3>
+      <div id="storesList" class="stores-list"></div>
+    </div>
+
+    <footer>
+      <p>Click an item, then click the store where you would buy it</p>
+    </footer>
+  </div>
+
+  <script>
+    const items = [
+      { name: 'Couch', store: 'furniture store' },
+      { name: 'Tennis racket', store: 'sports store' },
+      { name: 'Earring', store: 'jewelry store' },
+      { name: 'Sugar', store: 'grocery store' },
+      { name: 'Bunch of tulips', store: 'florist' },
+      { name: 'Contact lenses', store: 'optician' },
+      { name: 'Magazine', store: 'newsstand' },
+      { name: 'Onions', store: 'grocery store' },
+      { name: 'Silk scarf', store: 'boutique' },
+      { name: 'Necklace', store: 'jewelry store' },
+      { name: 'Dresser', store: 'furniture store' },
+      { name: 'Pair of skins', store: 'sports store' },
+      { name: 'Watermelon', store: 'grocery store' },
+      { name: 'Pair of pants', store: 'boutique' }
+    ];
+
+    const stores = [
+      'jewelry store',
+      'sports store',
+      'boutique',
+      'grocery store',
+      'florist',
+      'furniture store',
+      'optician',
+      'newsstand'
+    ];
+
+    let shuffledItems = [];
+    let selectedItem = null;
+    let selectedStore = null;
+    let matches = [];
+    let score = 0;
+
+    const itemsDiv = document.getElementById("items");
+    const storesDiv = document.getElementById("storesList");
+    const feedbackDiv = document.getElementById("feedback");
+    const scoreDiv = document.getElementById("score");
+    const congratsDiv = document.getElementById("congrats");
+
+    function shuffle(array) {
+      return array.sort(() => Math.random() - 0.5);
+    }
+
+    function resetGame() {
+      shuffledItems = shuffle([...items]);
+      selectedItem = null;
+      selectedStore = null;
+      matches = [];
+      score = 0;
+      feedbackDiv.textContent = "";
+      feedbackDiv.className = "feedback";
+      congratsDiv.classList.add("hidden");
+      renderItems();
+      renderStores();
+      updateScore();
+    }
+
+    function renderItems() {
+      itemsDiv.innerHTML = "";
+      shuffledItems.forEach(item => {
+        const row = document.createElement("div");
+        row.classList.add("item-row");
+
+        const itemBtn = document.createElement("button");
+        itemBtn.className = "item-btn";
+        itemBtn.textContent = item.name;
+        if (matches.includes(item.name)) {
+          itemBtn.classList.add("matched");
+          itemBtn.disabled = true;
+        }
+        if (selectedItem && selectedItem.name === item.name) {
+          itemBtn.classList.add("selected");
+        }
+        itemBtn.onclick = () => handleItemClick(item);
+
+        const storeSlot = document.createElement("div");
+        storeSlot.className = "store-slot";
+        if (matches.includes(item.name)) {
+          storeSlot.classList.add("matched");
+          storeSlot.textContent = item.store;
+        } else {
+          storeSlot.textContent = "?";
+        }
+
+        row.appendChild(itemBtn);
+        row.appendChild(storeSlot);
+        itemsDiv.appendChild(row);
+      });
+    }
+
+    function renderStores() {
+      storesDiv.innerHTML = "";
+      stores.forEach(store => {
+        const btn = document.createElement("button");
+        btn.className = "store-btn";
+        if (selectedStore === store) btn.classList.add("selected");
+
+        const matchCount = matches.filter(m => {
+          const found = items.find(i => i.name === m);
+          return found && found.store === store;
+        }).length;
+        const totalCount = items.filter(i => i.store === store).length;
+
+        const storeName = document.createElement("span");
+        storeName.textContent = store;
+        
+        const storeCount = document.createElement("span");
+        storeCount.className = "store-count";
+        storeCount.textContent = `(${matchCount}/${totalCount})`;
+
+        btn.appendChild(storeName);
+        btn.appendChild(storeCount);
+        btn.onclick = () => handleStoreClick(store);
+        storesDiv.appendChild(btn);
+      });
+    }
+
+    function handleItemClick(item) {
+      if (matches.includes(item.name)) return;
+      selectedItem = item;
+      feedbackDiv.textContent = "";
+      renderItems();
+      if (selectedStore) checkMatch(item, selectedStore);
+    }
+
+    function handleStoreClick(store) {
+      selectedStore = store;
+      feedbackDiv.textContent = "";
+      renderStores();
+      if (selectedItem) checkMatch(selectedItem, store);
+    }
+
+    function checkMatch(item, store) {
+      if (item.store === store) {
+        matches.push(item.name);
+        score++;
+        feedbackDiv.textContent = "Correct! ✓";
+        feedbackDiv.className = "feedback correct";
+      } else {
+        feedbackDiv.textContent = "Try again! ✗";
+        feedbackDiv.className = "feedback wrong";
+      }
+      updateScore();
+
+      setTimeout(() => {
+        selectedItem = null;
+        selectedStore = null;
+        feedbackDiv.textContent = "";
+        feedbackDiv.className = "feedback";
+        renderItems();
+        renderStores();
+        if (matches.length === items.length) showCongrats();
+      }, 1000);
+    }
+
+    function updateScore() {
+      scoreDiv.textContent = `Score: ${score}/${items.length}`;
+    }
+
+    function showCongrats() {
+      congratsDiv.classList.remove("hidden");
+    }
+
+    document.getElementById("shuffleBtn").addEventListener("click", resetGame);
+    resetGame();
+  </script>
+</body>
+</html>
